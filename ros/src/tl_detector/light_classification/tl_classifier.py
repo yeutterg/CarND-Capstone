@@ -1,7 +1,6 @@
 from styx_msgs.msg import TrafficLight
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
 import cv2
 
 graph_filename = "light_classification/frozen_inference_graph.pb"
@@ -11,6 +10,14 @@ test_images_folder = "light_classification/cropped/"
 img_save_count = 0
 
 def load_graph(frozen_graph_filename):
+    """Loads the graph from the file
+
+    Args:
+        frozen_graph_filename: The filemane of the graph
+
+    Returns:
+        graph: the loaded graph
+    """
     with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read()) 
@@ -18,27 +25,34 @@ def load_graph(frozen_graph_filename):
         tf.import_graph_def(graph_def, name="")
     return graph
 
-# don't think this is needed
-def image_to_bgr(image):
-    return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-
 def crop_to_rect(image, bbox):
+    """Crops the image to the specified bounding box
+
+    Args:
+        image (cv::Mat): the full image
+        bbox: the boundaries to crop
+
+    Returns:
+        image: the cropped image
+    """
     rows = image.shape[0]
     cols = image.shape[1]
-    left = int(bbox[1] * cols)
     top = int(bbox[0] * rows)
-    right = int(bbox[3] * cols)
+    left = int(bbox[1] * cols)
     bottom = int(bbox[2] * rows)
+    right = int(bbox[3] * cols)
     return image[top:bottom, left:right]
 
-def get_traffic_lights(image, graph):
+def get_traffic_lights(image, graph, test=False):
     """Finds the traffic lights in the image, if any
 
     Args:
         image (cv::Mat): image containing the traffic light
+        graph: the graph for classification
+        [optional] test (boolean): when True, saves cropped images to a file for testing purposes
 
     Returns:
-        lights (array): array containing the cropped traffic light images
+        array: array containing the cropped traffic light images
     """
     with tf.Session(graph=graph) as sess:
         tf_image_input = np.expand_dims(image, axis=0)
@@ -66,11 +80,11 @@ def get_traffic_lights(image, graph):
                 cropped = crop_to_rect(image, bbox)
                 images.append(cropped)
 
-                # for testing purposes save cropped images
-                # plt.imshow(cropped)
-                global img_save_count
-                cv2.imwrite(test_images_folder + "crop_" + str(img_save_count) + ".png", cropped)
-                img_save_count += 1
+                if test:
+                    # for testing purposes save cropped images
+                    global img_save_count
+                    cv2.imwrite(test_images_folder + "crop_" + str(img_save_count) + ".png", cropped)
+                    img_save_count += 1
 
         return images
 
@@ -89,8 +103,8 @@ class TLClassifier(object):
 
         """
         # get the cropped traffic light images
-        lights = get_traffic_lights(image, self.graph)
+        lights = get_traffic_lights(image, self.graph, test=True)
 
         #TODO implement light color prediction
-        # Valid: TrafficLight.UNKNOWN, RED, GREEN, YELLOW
+        # Valid output: TrafficLight.UNKNOWN, RED, GREEN, YELLOW
         return TrafficLight.UNKNOWN
