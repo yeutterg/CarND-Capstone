@@ -113,11 +113,10 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
+        print("image")
         if(not self.has_image):
             self.prev_light_loc = None
             return False
-
-        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
 
         #Get classification
         return self.light_classifier.get_classification(cv_image)
@@ -132,6 +131,9 @@ class TLDetector(object):
 
         """
         light = None
+
+        # for testing:
+        state = self.get_light_state(light)
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         stop_line_positions = self.config['stop_line_positions']

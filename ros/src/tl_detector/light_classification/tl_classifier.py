@@ -4,10 +4,10 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import cv2
 
-graph_filename = "ssd_mobilenet_v1_coco_11_06_2017/frozen_inference_graph.pb"
+graph_filename = "light_classification/frozen_inference_graph.pb"
 
 # for testing image cropping
-test_images_folder = "cropped/"
+test_images_folder = "light_classification/cropped/"
 img_save_count = 0
 
 def load_graph(frozen_graph_filename):
@@ -18,7 +18,7 @@ def load_graph(frozen_graph_filename):
         tf.import_graph_def(graph_def, name="")
     return graph
 
-# needed?
+# don't think this is needed
 def image_to_bgr(image):
     return cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
@@ -31,7 +31,7 @@ def crop_to_rect(image, bbox):
     bottom = bbox[2] * rows
     return image[left:right, top:bottom]
 
-def get_traffic_lights(image):
+def get_traffic_lights(image, graph):
     """Finds the traffic lights in the image, if any
 
     Args:
@@ -62,13 +62,14 @@ def get_traffic_lights(image):
 
             if score > 0.3:
                 #print ("Class: {}, Score: {}".format(classId, score))
+                # crop image and add to images array
                 cropped = crop_to_rect(image, bbox)
                 images.append(cropped)
 
                 # for testing purposes save cropped images
-                plt.imshow(cropped)
-                plt.savefig(test_images_folder + "crop_" + img_save_count)
-                img_save_count += 1
+                # plt.imshow(cropped)
+                # plt.savefig(test_images_folder + "crop_" + img_save_count)
+                # img_save_count += 1
 
         return images
 
@@ -87,8 +88,7 @@ class TLClassifier(object):
 
         """
         # get the cropped traffic light images
-        lights = get_traffic_lights(image)
-
+        lights = get_traffic_lights(image, self.graph)
 
         #TODO implement light color prediction
         # Valid: TrafficLight.UNKNOWN, RED, GREEN, YELLOW
