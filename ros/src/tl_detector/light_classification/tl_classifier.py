@@ -25,11 +25,11 @@ def image_to_bgr(image):
 def crop_to_rect(image, bbox):
     rows = image.shape[0]
     cols = image.shape[1]
-    left = bbox[1] * cols
-    top = bbox[0] * rows
-    right = bbox[3] * cols
-    bottom = bbox[2] * rows
-    return image[left:right, top:bottom]
+    left = int(bbox[1] * cols)
+    top = int(bbox[0] * rows)
+    right = int(bbox[3] * cols)
+    bottom = int(bbox[2] * rows)
+    return image[top:bottom, left:right]
 
 def get_traffic_lights(image, graph):
     """Finds the traffic lights in the image, if any
@@ -68,8 +68,9 @@ def get_traffic_lights(image, graph):
 
                 # for testing purposes save cropped images
                 # plt.imshow(cropped)
-                # plt.savefig(test_images_folder + "crop_" + img_save_count)
-                # img_save_count += 1
+                global img_save_count
+                cv2.imwrite(test_images_folder + "crop_" + str(img_save_count) + ".png", cropped)
+                img_save_count += 1
 
         return images
 
