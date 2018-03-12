@@ -16,7 +16,7 @@ Shmulik Willinger | shmulik83(at)gmail.com
 Greg Yeutter | yeutterg(at)gmail.com
 Scott Clegg | scott.c(at)cox.net
 Apostolos Georgiadis | georgiadis.it(at)gmail.com
-Or Khafi | okhafi@gmail.com
+Or Khafi | okhafi(at)gmail.com
 
 ### Software Architecture
 
