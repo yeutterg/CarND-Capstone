@@ -5,9 +5,10 @@ import cv2
 
 graph_filename = "light_classification/frozen_inference_graph.pb"
 
-# for testing image cropping
-test_images_folder = "light_classification/cropped/"
+# for testing traffic light identification
+test_images_folder = "light_classification/test/"
 img_save_count = 0
+fileHandler = 0
 
 def load_graph(frozen_graph_filename):
     """Loads the graph from the file
@@ -43,6 +44,36 @@ def crop_to_rect(image, bbox):
     right = int(bbox[3] * cols)
     return image[top:bottom, left:right]
 
+def record_tl_bounding_boxes(image, bboxes, num_detections, scores, classes, saveImg=False):
+    global img_save_count
+
+    # Record bounding boxes
+    rows = image.shape[0]
+    cols = image.shape[1]
+    for i in range(num_detections):
+        bbox = [float(v) for v in np.squeeze(bboxes)[i]]
+        top = int(bbox[0] * rows)
+        left = int(bbox[1] * cols)
+        bottom = int(bbox[2] * rows)
+        right = int(bbox[3] * cols)
+        score = np.squeeze(scores)[i]
+        classId = int(np.squeeze(classes)[i])
+        saveRow(i, score, classId, top, left, bottom, right)
+
+    # Save image
+    if saveImg:
+        cv2.imwrite(test_images_folder + str(img_save_count) + ".jpg", image)
+        img_save_count += 1
+
+def saveRow(num, score, classId, top, bottom, left, right):
+    global fileHandler
+    fileHandler.write(str(num) + ',' + str(score) + ',' + str(classId) + ',' + str(top) + ',' + str(bottom) + ',' + str(left) + ',' + str(right) + '\n')
+
+def newFile(filename):
+    global fileHandler
+    fileHandler = open(test_images_folder + filename, "a+")
+    fileHandler.write("image, score, classId, top, left, bottom, right\n")
+
 def get_traffic_lights(image, graph, test=False):
     """Finds the traffic lights in the image, if any
 
@@ -65,8 +96,11 @@ def get_traffic_lights(image, graph, test=False):
             feed_dict={'image_tensor:0': tf_image_input})
 
         num_detections = int(np.squeeze(detections))
-        images = []
 
+        # for training, record bounding boxes
+        record_tl_bounding_boxes(image, boxes, num_detections, scores, classes, saveImg=True)
+
+        images = []
         for i in range(num_detections):
             classId = int(np.squeeze(classes)[i])
             if (classId != 10):
@@ -76,9 +110,11 @@ def get_traffic_lights(image, graph, test=False):
 
             if score > 0.3:
                 #print ("Class: {}, Score: {}".format(classId, score))
+                images.append(image)
+
                 # crop image and add to images array
-                cropped = crop_to_rect(image, bbox)
-                images.append(cropped)
+                # cropped = crop_to_rect(image, bbox)
+                # images.append(cropped)
 
                 if test:
                     # for testing purposes save cropped images
@@ -92,6 +128,9 @@ class TLClassifier(object):
     def __init__(self):
         self.graph = load_graph(graph_filename)
 
+        # for training dataset
+        newFile('datapts.csv')
+
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
 
@@ -103,7 +142,8 @@ class TLClassifier(object):
 
         """
         # get the cropped traffic light images
-        lights = get_traffic_lights(image, self.graph, test=True)
+        # lights = get_traffic_lights(image, self.graph, test=True)
+        lights = get_traffic_lights(image, self.graph)
 
         #TODO implement light color prediction
         # Valid output: TrafficLight.UNKNOWN, RED, GREEN, YELLOW
