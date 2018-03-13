@@ -58,7 +58,7 @@ def record_tl_bounding_boxes(image, bboxes, num_detections, scores, classes, sav
         right = int(bbox[3] * cols)
         score = np.squeeze(scores)[i]
         classId = int(np.squeeze(classes)[i])
-        saveRow(i, score, classId, top, left, bottom, right)
+        saveRow(img_save_count, score, classId, top, left, bottom, right)
 
     # Save image
     if saveImg:
