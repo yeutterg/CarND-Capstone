@@ -49,17 +49,17 @@ def waypoint_ahead(pose, waypoint):
 def get_cyclic_range_indices_normal(min_index, current_index, max_index, count):
     indices_count_to_end = max_index - current_index
     if indices_count_to_end >= count:
-        return [(current_index, current_index + count)]
+        return [(current_index, current_index + count + 1)]
     else:
-        return [(current_index, max_index), (min_index, min_index + count - indices_count_to_end)]
+        return [(current_index, max_index + 1), (min_index, min_index + count - indices_count_to_end)]
 
 
 def get_cyclic_range_indices_reversed(min_index, current_index, max_index, count):
     indices_count_to_start = current_index - min_index
     if indices_count_to_start >= count:
-        return [(current_index, current_index - count)]
+        return [(current_index, current_index - count - 1)]
     else:
-        return [(current_index, min_index), (max_index, max_index - count - indices_count_to_start)]
+        return [(current_index, min_index - 1), (max_index, max_index - count + indices_count_to_start)]
 
 
 def get_cyclic_range_indices(min_index, current_index, max_index, count, reverse_search=False):
@@ -72,16 +72,18 @@ def get_cyclic_range_indices(min_index, current_index, max_index, count, reverse
 def get_cyclic_range(min_index, current_index, max_index, count, reverse_search=False):
     range_indices_list = get_cyclic_range_indices(min_index, current_index, max_index, count, reverse_search)
 
+    step = -1 if reverse_search else 1
+
     range_list = []
     for index_tuple in range_indices_list:
-        range_list += list(range(index_tuple[0], index_tuple[1]))
+        range_list += list(range(index_tuple[0], index_tuple[1], step))
 
     return range_list
 
 
 def get_closest_waypoint_index(waypoints, current_pose, current_waypoint_index, base_waypoints_num, reverse_search=False):
     # waypoints are cyclic
-    waypoints_range = get_cyclic_range(0, current_waypoint_index, base_waypoints_num, base_waypoints_num, reverse_search)
+    waypoints_range = get_cyclic_range(0, current_waypoint_index, base_waypoints_num - 1, base_waypoints_num, reverse_search)
 
     min_distance = direct_position_distance(current_pose.position, waypoints[current_waypoint_index].pose.pose.position)
 
@@ -121,4 +123,3 @@ def get_closest_waypoint_before_or_ahead_index(waypoints, current_pose, current_
         current_waypoint_index += index_search_addition
 
     return current_waypoint_index % base_waypoints_num
-

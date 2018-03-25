@@ -210,8 +210,7 @@ class TLDetector(object):
         if not self.lights or not self.pose:
             return -1, TrafficLight.UNKNOWN
 
-        closest_light_stop_waypoint, closest_light = self.get_nearby_traffic_light(
-            self.waypoints[self.current_waypoint_index])
+        closest_light_stop_waypoint, closest_light = self.get_nearby_traffic_light(self.current_waypoint_index)
 
         if closest_light:
             state = self.get_light_state(closest_light)
@@ -220,12 +219,11 @@ class TLDetector(object):
         return -1, TrafficLight.UNKNOWN
 
     def get_nearby_traffic_light(self, current_waypoint):
-        min_distance = MAX_TRAFFIC_LIGHT_DISTANCE_METERS
         closest_light_waypoint = None
         closest_light = None
 
         # find the closest light ahead of the car
-        for i in range(0, len(self.lights)):
+        for i in range(len(self.lights)):
             light = self.lights[i]
             if light.closest_stop_waypoint > current_waypoint:
                 if not closest_light_waypoint or light.closest_stop_waypoint < closest_light_waypoint:
@@ -233,7 +231,9 @@ class TLDetector(object):
                     closest_light = light
 
         # if we found light after our current position and it's close to us, return it, otherwise return None
-        if closest_light_waypoint and waypoint_helper.direct_position_distance(current_waypoint.pose) < min_distance:
+        if closest_light_waypoint and waypoint_helper.direct_position_distance(
+                self.waypoints[closest_light_waypoint].pose.pose.position, self.waypoints[current_waypoint].pose.pose.position) \
+                < MAX_TRAFFIC_LIGHT_DISTANCE_METERS:
             return closest_light_waypoint, closest_light
 
         return None, None

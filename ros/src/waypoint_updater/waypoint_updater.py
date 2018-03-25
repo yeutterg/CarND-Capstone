@@ -103,6 +103,7 @@ class WaypointUpdater(object):
                                                                                  , self.current_waypoint_index
                                                                                  , self.base_waypoints_num)
         self.current_waypoint_index = closet_waypoint_index
+        # rospy.loginfo("wu:current waypoint:" + str(self.current_waypoint_index))
 
         self.current_waypoint_pub.publish(Int32(self.current_waypoint_index))
 
