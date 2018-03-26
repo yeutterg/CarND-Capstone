@@ -14,7 +14,7 @@ import math
 import waypoint_helper
 
 STATE_COUNT_THRESHOLD = 3
-MAX_TRAFFIC_LIGHT_DISTANCE_METERS = 300
+MAX_TRAFFIC_LIGHT_DISTANCE_METERS = 150
 
 
 class TLDetector(object):
@@ -41,7 +41,7 @@ class TLDetector(object):
         rely on the position of the light and the camera image to predict it.
         '''
         self.traffic_lights_sub = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
 
         config_string = rospy.get_param("/traffic_light_config")
         self.config = yaml.load(config_string)
@@ -211,9 +211,9 @@ class TLDetector(object):
             return -1, TrafficLight.UNKNOWN
 
         closest_light_stop_waypoint, closest_light = self.get_nearby_traffic_light(self.current_waypoint_index)
-
         if closest_light:
             state = self.get_light_state(closest_light)
+	    rospy.loginfo("Traffic light state is: " + str(state))
             return closest_light_stop_waypoint, state
 
         return -1, TrafficLight.UNKNOWN
@@ -231,10 +231,12 @@ class TLDetector(object):
                     closest_light = light
 
         # if we found light after our current position and it's close to us, return it, otherwise return None
-        if closest_light_waypoint and waypoint_helper.direct_position_distance(
-                self.waypoints[closest_light_waypoint].pose.pose.position, self.waypoints[current_waypoint].pose.pose.position) \
-                < MAX_TRAFFIC_LIGHT_DISTANCE_METERS:
-            return closest_light_waypoint, closest_light
+        if closest_light_waypoint:
+		distance_to_traffic_light = waypoint_helper.direct_position_distance(\
+			self.waypoints[closest_light_waypoint].pose.pose.position, \
+			self.waypoints[current_waypoint].pose.pose.position)
+		if distance_to_traffic_light < MAX_TRAFFIC_LIGHT_DISTANCE_METERS:
+            		return closest_light_waypoint, closest_light
 
         return None, None
 
