@@ -3,11 +3,8 @@
 import rospy
 from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
-from std_msgs.msg import Int32
-
-import math
-import sys
-import tf
+from std_msgs.msg import Bool, Int32, Float32
+import waypoint_helper
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -21,54 +18,42 @@ Please note that our simulator also provides the exact location of traffic light
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
 
-Author: Apostolos Georgiadis <apostolos.georgiadis@gmx.ch>
-Date:   23.03.2018
+TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS = 50 # Number of waypoints we will publish. You can change this number
-DEBUG = True
+LOOKAHEAD_WPS = 100  # Number of waypoints we will publish. You can change this number
+
 
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
-	# Subscribers
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
-        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb, queue_size=1)
-	rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
-	#rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)	
-	# Publisher
+
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/obstacle_waypoints', PoseStamped, self.obstacle_cb)
+        rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
+
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
-	# Current vehicle location and orientation
-	self.current_pose = None
-	# Base waypoints
-	self.base_waypoints = None
-  	# Indicates traffic light waypoint
-	self.traffic_waypoint = -1
-        rospy.spin()
+        self.current_waypoint_pub = rospy.Publisher('current_waypoint', Int32, queue_size=1)
+
+        self.current_pose = None
+        self.base_waypoints = None
+        self.base_waypoints_num = None
+        self.current_waypoint_index = None
+        self.stop_waypoint_index = None
+
+        self.loop()
 
     def pose_cb(self, msg):
-        ''' Callback for /current_pose. 
-	    Sets the vehicles location and orientation. 
-	'''
-	self.current_pose = msg.pose
-	if self.base_waypoints is not None: 
-        	self.update()
+        self.current_pose = msg.pose
 
-    def waypoints_cb(self, waypoints):
-	''' 
-	Callback for /base_waypoints. 
-	Sets the waypoint map. This is called once. 
-	''' 
-        self.base_waypoints = waypoints.waypoints
-	rospy.loginfo("Waypoints loaded.")
+    def waypoints_cb(self, msg):
+        self.base_waypoints = msg.waypoints
+        self.base_waypoints_num = len(self.base_waypoints)
+        self.current_waypoint_index = 0
 
     def traffic_cb(self, msg):
-        ''' 
-  	Callback for /traffic_waypoint. 
-	Sets the traffic waypoint. 
-	''' 
-        self.traffic_waypoint = msg.data
-	rospy.loginfo("Traffic light at " + str(self.traffic_waypoint))
+        self.stop_waypoint_index = msg
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
@@ -80,73 +65,54 @@ class WaypointUpdater(object):
     def set_waypoint_velocity(self, waypoints, waypoint, velocity):
         waypoints[waypoint].twist.twist.linear.x = velocity
 
-    def distance(self, waypoints, wp1, wp2):
-        dist = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-        for i in range(wp1, wp2+1):
-            dist += dl(waypoints[wp1].pose.pose.position, waypoints[i].pose.pose.position)
-            wp1 = i
-        return dist
+    def loop(self):
+        rate = rospy.Rate(10.0)  # 10Hz
+        while not rospy.is_shutdown():
+            self.update_waypoints()
+            rate.sleep()
 
-    def get_current_position(self):
-	if self.current_pose is not None:
-		return self.current_pose.position
-	return None
+    def should_update_waypoints(self):
+        return self.get_basic_waypoints() and self.current_pose
 
-    def get_current_orientation(self):
-	if self.current_pose is not None:
-		return self.current_pose.orientation
-	return None
+    def get_basic_waypoints(self):
+        return self.base_waypoints
 
-    def print_position(self):
-	p = self.get_current_position()
-        print("X: {}, Y: {}, Z: {}".format(p.x, p.y, p.z))
+    def get_current_waypoint_index(self):
+        return self.current_waypoint_index
 
-    def print_orientation(self):
-	o = self.get_current_orientation()
-        print("X: {}, Y: {}, Z: {}, W: {}".format(o.x, o.y, o.z, o.w))
+    def get_final_waypoints(self):
+        range_indices_list = waypoint_helper.get_cyclic_range_indices(0, self.get_current_waypoint_index(),
+                                                                      self.base_waypoints_num, LOOKAHEAD_WPS)
 
-    def closest_waypoint(self, pose, waypoints):
-        closest_len = sys.maxint # large number
-        closest_waypoint = 0
-        dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2)
-        for i, waypoint in enumerate(waypoints):
-            dist = dl(pose.position, waypoint.pose.pose.position)
-            if (dist < closest_len):
-                closest_len = dist
-                closest_waypoint = i
-        return closest_waypoint
+        final_waypoints = []
+        for index_tuple in range_indices_list:
+            final_waypoints += self.get_basic_waypoints()[index_tuple[0]:index_tuple[1]]
 
-    def next_waypoint(self, pose, waypoints):
-        closest_waypoint = self.closest_waypoint(pose, waypoints)
-        map_x = waypoints[closest_waypoint].pose.pose.position.x
-        map_y = waypoints[closest_waypoint].pose.pose.position.y
-        heading = math.atan2((map_y - pose.position.y), (map_x - pose.position.x))
-        quaternion = (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w)
-        _, _, yaw = tf.transformations.euler_from_quaternion(quaternion)
-        angle = abs(yaw - heading)        
-	if angle > (math.pi / 4):        
-      		closest_waypoint += 1
-        return closest_waypoint
+        return final_waypoints
 
-    def update(self):
-	''' 
-	Updates and publishes the future waypoints at /final_waypoints. 
- 	'''	
-	# Check if current pose  and waypoints are valid
-	if self.current_pose is None or self.base_waypoints is None:
-		return 	
-	# Get next waypoints
-	next_idx = self.next_waypoint(self.current_pose, self.base_waypoints)
-	next_waypoints = self.base_waypoints[next_idx:+next_idx+LOOKAHEAD_WPS]
+    def get_stop_waypoint_index(self):
+        return self.get_stop_waypoint_index()
 
-	# TODO star-simulators: Handle traffic lights here  
+    def update_waypoints(self):
+        if not self.should_update_waypoints():
+            return
 
-	# Create and publish Lane msg 
+        # get closet waypoint index to our car
+        closet_waypoint_index = waypoint_helper.get_closest_waypoint_ahead_index(self.get_basic_waypoints()
+                                                                                 , self.current_pose
+                                                                                 , self.current_waypoint_index
+                                                                                 , self.base_waypoints_num)
+        self.current_waypoint_index = closet_waypoint_index
+        # rospy.loginfo("wu:current waypoint:" + str(self.current_waypoint_index))
+
+        self.current_waypoint_pub.publish(Int32(self.current_waypoint_index))
+
         lane = Lane()
-	lane.header.stamp = rospy.Time.now()
-	lane.waypoints = next_waypoints
-	self.final_waypoints_pub.publish(lane)
+        lane.header.stamp = rospy.Time.now()
+        lane.waypoints = self.get_final_waypoints()
+
+        self.final_waypoints_pub.publish(lane)
+
 
 if __name__ == '__main__':
     try:
