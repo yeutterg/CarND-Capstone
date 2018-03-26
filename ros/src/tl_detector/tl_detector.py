@@ -18,6 +18,8 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
+        self.light_classifier = TLClassifier()
+
         self.pose = None
         self.waypoints = None
         self.camera_image = None
@@ -42,7 +44,6 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -145,6 +146,9 @@ class TLDetector(object):
 
         """
         light = None
+
+        # for testing:
+        state = self.get_light_state(light)
 
         # List of positions that correspond to the line to stop in front of for a given intersection
         #stop_line_positions = self.config['stop_line_positions']
