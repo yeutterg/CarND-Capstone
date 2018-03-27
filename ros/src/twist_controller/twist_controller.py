@@ -8,9 +8,7 @@ import numpy as np
 GAS_DENSITY = 2.858
 ONE_MPH = 0.44704
 
-
 class Controller(object):
-
 	#  Calculating the steer angle and acceleration by the YawController and PID controller
     def __init__(self, vehicle_mass, fuel_capacity, min_speed, brake_deadband, deceleration_limit, acceleration_limit,
                  wheel_base, wheel_radius, steer_ratio, max_lat_accel, max_steer_angle):

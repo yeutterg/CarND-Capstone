@@ -7,8 +7,9 @@ from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from light_classification.tl_classifier import TLClassifier
+import sys
+import math
 import tf
-import cv2
 import yaml
 import math
 import waypoint_helper
@@ -56,7 +57,6 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
 
         rospy.spin()
@@ -135,10 +135,9 @@ class TLDetector(object):
                                                                  , True)
 
     def get_closest_stop_line_pose(self, closest_waypoint_index):
-
         if closest_waypoint_index is 0:
             return 0
-
+    
         light_stop_line_positions = self.config['stop_line_positions']
         waypoint = self.waypoints[closest_waypoint_index]
         min_distance = float('inf')
@@ -177,7 +176,6 @@ class TLDetector(object):
         else:
             return waypoint_helper.get_closest_waypoint_ahead_index(self.waypoints, pose, current_waypoint_index,
                                                                     self.waypoints_num)
-
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
@@ -199,6 +197,19 @@ class TLDetector(object):
 
         # Get classification
         return self.light_classifier.get_classification(cv_image)
+
+    def distance_between_pos(self, pos1, pos2):
+        return math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.z - pos2.z) ** 2 + (pos1.y - pos2.y) ** 2)
+
+    def get_stop_line_positions(self):
+        stop_line_positions = []
+        for light_position in self.config['stop_line_positions']:
+            p = Waypoint()
+            p.pose.pose.position.x = light_position[0]
+            p.pose.pose.position.y = light_position[1]
+            p.pose.pose.position.z = 0.0
+            stop_line_positions.append(p)
+        return stop_line_positions
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -243,7 +254,6 @@ class TLDetector(object):
             return closest_light_waypoint, closest_light
 
         return None, None
-
 
 if __name__ == '__main__':
     try:

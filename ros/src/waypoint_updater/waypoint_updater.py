@@ -11,20 +11,14 @@ import copy
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
-
 As mentioned in the doc, you should ideally first implement a version which does not care
 about traffic lights or obstacles.
-
 Once you have created dbw_node, you will update this node to use the status of traffic lights too.
-
 Please note that our simulator also provides the exact location of traffic lights and their
 current status in `/vehicle/traffic_lights` message. You can use this message to build this node
 as well as to verify your TL classifier.
-
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
-
-
 def get_waypoint_velocity(waypoint):
     return waypoint.twist.twist.linear.x
 
@@ -112,6 +106,9 @@ def set_final_waypoints_velocity(final_waypoints, current_speed, current_waypoin
 
 LOOKAHEAD_WPS = 100  # Number of waypoints we will publish. You can change this number
 
+class State(Enum):
+    ACCELERATION = 1
+    DECELERATION = 2
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -150,8 +147,8 @@ class WaypointUpdater(object):
     def traffic_cb(self, msg):
         self.stop_waypoint_index = int(msg.data)
 
+
     def obstacle_cb(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
         pass
 
     def current_velocity_cb(self, velocity):
@@ -220,7 +217,6 @@ class WaypointUpdater(object):
         lane.waypoints = final_waypoints
 
         self.final_waypoints_pub.publish(lane)
-
 
 if __name__ == '__main__':
     try:
