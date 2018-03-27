@@ -2,6 +2,7 @@
 
 from pid import PID
 from yaw_controller import YawController
+from lowpass import LowPassFilter
 import numpy as np
 
 GAS_DENSITY = 2.858
