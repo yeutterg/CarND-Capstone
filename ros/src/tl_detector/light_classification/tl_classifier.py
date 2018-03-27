@@ -2,6 +2,7 @@ from styx_msgs.msg import TrafficLight
 import tensorflow as tf
 import numpy as np
 import os
+import rospy
 
 
 def load_graph(frozen_graph_filename):
@@ -25,7 +26,7 @@ class TLClassifier(object):
             4: TrafficLight.UNKNOWN
         }
 
-        self.prediction_threshold = 0.5
+        self.prediction_threshold = 0.2
         self.frozen_graph_path = os.getcwd() + '/light_classification/models/output_inference/frozen_inference_graph.pb'
         self.graph = load_graph(self.frozen_graph_path)
         self.sess = tf.Session(graph=self.graph)
@@ -47,22 +48,13 @@ class TLClassifier(object):
 
         """
         tf_image_input = np.expand_dims(image, axis=0)
-        detections, scores, boxes, classes = self.sess.run(
-            [self.num_detections, self.detection_scores, self.detection_boxes, self.detection_classes],
-            feed_dict={self.image_tensor: tf_image_input})
-
-        num_detections = int(np.squeeze(detections))
-        boxes = np.squeeze(boxes)
-        scores = np.squeeze(scores)
-        classes = np.squeeze(classes).astype(np.int32)
-
-        min_score = self.prediction_threshold
         class_id = TrafficLight.UNKNOWN
 
-        for i in range(num_detections):
-            score = scores[i]
-            if score > min_score:
-                min_score = score
-                class_id = self.label_dict[classes[i]]
+        scores, classes = self.sess.run([self.detection_scores, self.detection_classes],
+                feed_dict={self.image_tensor: tf_image_input})
+        top_score = scores[0][0]
+
+        if top_score > self.prediction_threshold:
+            class_id = int(classes[0][0])
 
         return class_id
