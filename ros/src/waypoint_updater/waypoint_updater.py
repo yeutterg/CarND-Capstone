@@ -47,6 +47,9 @@ class WaypointUpdater(object):
         self.current_velocity_in_mps = None
         self.state_changed = True
         self.final_waypoints = None
+        self.base_waypoints = None
+        self.base_waypoints_num = None
+        self.current_waypoint_index = None
 
         self.acceleration_limit_in_mps = rospy.get_param('~accel_limit', 1.)
         self.deceleration_limit_max_in_mps = -rospy.get_param('~decel_limit', -5.)
@@ -68,6 +71,9 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
         self.lane = waypoints
         self.number_of_waypoints = len(self.lane.waypoints)
+        self.base_waypoints = waypoints.waypoints
+        self.base_waypoints_num = len(self.base_waypoints)
+        self.current_waypoint_index = 0
 
     def distance_between_pos(self, pos1, pos2):
         return math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2 + (pos1.z - pos2.z) ** 2)

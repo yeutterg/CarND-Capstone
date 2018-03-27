@@ -220,6 +220,7 @@ class TLDetector(object):
 
         """
         # for testing TODO:
+        light = None
         state = self.get_light_state(light)
 
         if not self.lights or not self.pose:

@@ -22,7 +22,8 @@ class Controller(object):
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
         self.steer_lpf = LowPassFilter(tau=3, ts=1)
         self.throttle_lpf = LowPassFilter(tau=3, ts=1)
-
+        self.brake_deadband = brake_deadband
+        self.min_speed = min_speed
 
     #  Getting the velocity (current and required) and time elapsed from last call
 	#  Calculating the velocity correction (acceleration/deceleration) by PID
@@ -44,7 +45,7 @@ class Controller(object):
             return throttle, 0., steer
         else:
             throttle = -throttle
-            if throttle < self.params['brake_deadband']:
+            if throttle < self.brake_deadband:
                 throttle = 0
             torque = self.total_mass * throttle
             return 0., torque, steer
