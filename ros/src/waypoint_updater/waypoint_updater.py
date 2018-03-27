@@ -161,7 +161,7 @@ class WaypointUpdater(object):
         self.target_speed = speed.data
 
     def loop(self):
-        rate = rospy.Rate(10.0)  # 10Hz
+        rate = rospy.Rate(1)  # slowed from 10Hz to 1Hz for performance
         while not rospy.is_shutdown():
             self.update_waypoints()
             rate.sleep()
