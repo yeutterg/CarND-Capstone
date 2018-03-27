@@ -31,6 +31,11 @@ class TLDetector(object):
         self.lights = []
         self.lights_dict = {}
 
+        self.state = TrafficLight.UNKNOWN
+        self.last_state = TrafficLight.UNKNOWN
+        self.last_wp = -1
+        self.state_count = 0
+
         sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
         sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         sub7 = rospy.Subscriber('/current_waypoint', Int32, self.current_waypoint_cb)
@@ -53,11 +58,6 @@ class TLDetector(object):
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
         self.listener = tf.TransformListener()
-
-        self.state = TrafficLight.UNKNOWN
-        self.last_state = TrafficLight.UNKNOWN
-        self.last_wp = -1
-        self.state_count = 0
 
         rospy.spin()
 
@@ -135,6 +135,9 @@ class TLDetector(object):
                                                                  , True)
 
     def get_closest_stop_line_pose(self, closest_waypoint_index):
+
+        if closest_waypoint_index is 0:
+            return 0
 
         light_stop_line_positions = self.config['stop_line_positions']
         waypoint = self.waypoints[closest_waypoint_index]

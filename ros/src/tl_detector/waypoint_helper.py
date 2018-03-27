@@ -82,6 +82,11 @@ def get_cyclic_range(min_index, current_index, max_index, count, reverse_search=
 
 
 def get_closest_waypoint_index(waypoints, current_pose, current_waypoint_index, base_waypoints_num, reverse_search=False):
+    print(str(waypoints) + ", " + str(current_pose) + ", " + str(current_waypoint_index) + ", " + str(base_waypoints_num))
+
+    if (base_waypoints_num is None) or (waypoints is None):
+        return 0
+    
     # waypoints are cyclic
     waypoints_range = get_cyclic_range(0, current_waypoint_index, base_waypoints_num - 1, base_waypoints_num, reverse_search)
 
@@ -117,6 +122,9 @@ def get_closest_waypoint_before_or_ahead_index(waypoints, current_pose, current_
 
     current_waypoint_index = get_closest_waypoint_index(waypoints, current_pose, current_waypoint_index
                                                         , base_waypoints_num, reverse_search)
+
+    if current_waypoint_index == 0:
+        return 0
 
     # min distance waypoint might be behind or ahead of the current position
     if not waypoint_ahead(current_pose, waypoints[current_waypoint_index]):
