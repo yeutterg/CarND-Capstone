@@ -2,7 +2,6 @@ from styx_msgs.msg import TrafficLight
 import numpy as np
 import tensorflow as tf
 import cv2
-import os
 
 graph_filename = "light_classification/frozen_inference_graph.pb"
 
@@ -129,26 +128,8 @@ class TLClassifier(object):
     def __init__(self):
         self.graph = load_graph(graph_filename)
 
-        # for training dataset TODO remove
+        # for training dataset
         newFile('datapts.csv')
-
-        self.label_dict = {
-            1: TrafficLight.RED,
-            2: TrafficLight.YELLOW,
-            3: TrafficLight.GREEN,
-            4: TrafficLight.UNKNOWN
-        }
-
-        self.prediction_threshold = 0.5
-        self.frozen_graph_path = os.getcwd() + '/light_classification/models/output_inference/frozen_inference_graph.pb'
-        self.graph = load_graph(self.frozen_graph_path)
-        self.sess = tf.Session(graph=self.graph)
-
-        self.num_detections = self.graph.get_tensor_by_name('num_detections:0')
-        self.detection_scores = self.graph.get_tensor_by_name('detection_scores:0')
-        self.detection_boxes = self.graph.get_tensor_by_name('detection_boxes:0')
-        self.detection_classes = self.graph.get_tensor_by_name('detection_classes:0')
-        self.image_tensor = self.graph.get_tensor_by_name('image_tensor:0')
 
     def get_classification(self, image):
         """Determines the color of the traffic light in the image
@@ -160,29 +141,10 @@ class TLClassifier(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        # get the cropped traffic light images (TODO for testing)
+        # get the cropped traffic light images
         # lights = get_traffic_lights(image, self.graph, test=True)
         lights = get_traffic_lights(image, self.graph)
 
-        # Implement light color prediction
+        #TODO implement light color prediction
         # Valid output: TrafficLight.UNKNOWN, RED, GREEN, YELLOW
-        tf_image_input = np.expand_dims(image, axis=0)
-        detections, scores, boxes, classes = self.sess.run(
-            [self.num_detections, self.detection_scores, self.detection_boxes, self.detection_classes],
-            feed_dict={self.image_tensor: tf_image_input})
-
-        num_detections = int(np.squeeze(detections))
-        boxes = np.squeeze(boxes)
-        scores = np.squeeze(scores)
-        classes = np.squeeze(classes).astype(np.int32)
-
-        min_score = self.prediction_threshold
-        class_id = TrafficLight.UNKNOWN
-
-        for i in range(num_detections):
-            score = scores[i]
-            if score > min_score:
-                min_score = score
-                class_id = self.label_dict[classes[i]]
-
-        return class_id
+        return TrafficLight.UNKNOWN

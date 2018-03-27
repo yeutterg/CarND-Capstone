@@ -2,7 +2,6 @@
 
 from pid import PID
 from yaw_controller import YawController
-from lowpass import LowPassFilter
 import numpy as np
 
 GAS_DENSITY = 2.858
@@ -17,7 +16,7 @@ class Controller(object):
 
         self.deceleration_limit = deceleration_limit
         self.velocity_controller = PID(1.5, 0.01, 0., deceleration_limit, acceleration_limit)
-        self.total_mass = (vehicle_mass + (fuel_capacity * GAS_DENSITY)) * wheel_radius
+        self.total_mass = vehicle_mass + (fuel_capacity * GAS_DENSITY)
         self.wheel_radius = wheel_radius
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
         self.steer_lpf = LowPassFilter(tau=3, ts=1)
@@ -29,17 +28,12 @@ class Controller(object):
 	#  Calculating the velocity correction (acceleration/deceleration) by PID
 	#  Return the acceleration (throttle), brake (deceleration) and steer angle 
     def control(self, twist_cmd, current_velocity, time_elapsed):
-        v_lin = abs(twist_cmd.twist.linear.x)
-        vel_error = v_lin - current_velocity.twist.linear.x
-
+        vel_error = twist_cmd.twist.linear.x - current_velocity.twist.linear.x
         throttle = self.velocity_controller.step(vel_error, time_elapsed)
-        throttle = self.throttle_lpf.filt(throttle)
-
-        steer = self.yaw_controller.get_steering(v_lin, twist_cmd.twist.angular.z, current_velocity.twist.linear.x)
-        steer = self.steer_lpf.filt(steer)
+        steer = self.yaw_controller.get_steering(twist_cmd.twist.linear.x, twist_cmd.twist.angular.z, current_velocity.twist.linear.x)
 
         if current_velocity.twist.linear.x < 0.1 and np.isclose(twist_cmd.twist.linear.x, 0.):
-            torque = self.total_mass * self.deceleration_limit
+            torque = self.total_mass * self.wheel_radius * self.deceleration_limit
             return 0., torque, steer
         elif throttle > 0:
             return throttle, 0., steer

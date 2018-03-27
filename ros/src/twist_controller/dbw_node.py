@@ -64,41 +64,33 @@ class DBWNode(object):
 
         self.current_velocity = None
         self.twist_cmd = None
-        self.dbw_enabled = False
-        # self.last_time = rospy.Time().now()
-
-        # Subscribers
-        rospy.Subscriber('/twist_cmd', TwistStamped, self.twist_cmd_cb, queue_size=10)
-        rospy.Subscriber('/current_velocity', TwistStamped, self.current_velocity_cb, queue_size=10)
-        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self.dbw_enabled_cb, queue_size=1)
-
-        # Previous timestamp
-        self.prev_timestamp = rospy.get_time()
-
+        self.dbw_enabled = None
+        self.last_time = rospy.Time().now()
         self.loop()
 
 
     def loop(self):
         rate = rospy.Rate(50) # 50Hz
         while not rospy.is_shutdown():
-            cur_timestamp = rospy.get_time()
-            dt = cur_timestamp - self.prev_timestamp
-            self.prev_timestamp = cur_timestamp
-            if self.dbw_enabled and self.twist_cmd is not None and self.current_velocity is not None:
-                throttle, brake, steering = self.controller.control(self.twist_cmd, self.current_velocity, dt)
-                self.publish(throttle, brake, steering)
+            cur_time = rospy.Time().now()
+            time_span = cur_time - self.last_time
+            self.last_time = cur_time
+
+            # Validate that publishing to the vehicle is allowed
+            if self.dbw_enabled is not None  and self.twist_cmd is not None  and self.current_velocity is not None and self.dbw_enabled:
+                throttle, brake, steering = self.controller.control(self.twist_cmd, self.current_velocity, time_span.to_sec())
+                if self.dbw_enabled:
+                    self.publish(throttle, brake, steering)
             rate.sleep()
 
 
-    def dbw_enabled_cb(self, msg):
-    	self.dbw_enabled = bool(msg.data)
-        if self.dbw_enabled == False:
+    def dbw_enabled_cb(self, dbw_enabled):
+        if dbw_enabled:
             self.controller.reset()
-        rospy.loginfo("DBW enabled: " + str(self.dbw_enabled))
+        self.dbw_enabled = dbw_enabled.data
 
-    def current_velocity_cb(self, msg):
-        self.current_velocity = msg
-	    #rospy.loginfo("Current velocity: " + str(self.current_velocity))
+    def current_velocity_cb(self, velocity):
+        self.current_velocity = velocity
 
     def twist_cmd_cb(self, msg):
         self.twist_cmd = msg
