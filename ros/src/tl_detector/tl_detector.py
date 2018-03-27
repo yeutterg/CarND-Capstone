@@ -21,6 +21,8 @@ class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
 
+        self.light_classifier = TLClassifier()
+
         self.pose = None
         self.waypoints = None
         self.waypoints_num = None
