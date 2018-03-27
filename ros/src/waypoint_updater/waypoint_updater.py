@@ -2,6 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import PoseStamped, TwistStamped
+from enum import Enum
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Bool, Int32, Float32
 import waypoint_helper
