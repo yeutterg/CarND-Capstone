@@ -14,7 +14,7 @@ import math
 import waypoint_helper
 
 STATE_COUNT_THRESHOLD = 3
-MAX_TRAFFIC_LIGHT_DISTANCE_METERS = 300
+MAX_TRAFFIC_LIGHT_DISTANCE_METERS = 200
 
 
 class TLDetector(object):
@@ -73,9 +73,6 @@ class TLDetector(object):
 
     def traffic_cb(self, msg):
         self.lights = self.get_sorted_lights_with_waypoints(msg.lights)
-
-        # TODO: only use for testing since it doesn't change
-        self.traffic_lights_sub.unregister()
 
     def image_cb(self, msg):
         """Identifies red lights in the incoming camera image and publishes the index
@@ -216,7 +213,11 @@ class TLDetector(object):
 
         if closest_light:
             state = self.get_light_state(closest_light)
-            return closest_light_stop_waypoint, state
+            
+            if state == TrafficLight.RED:
+                return closest_light_stop_waypoint, state
+            else:
+                return -1, state
 
         return -1, TrafficLight.UNKNOWN
 

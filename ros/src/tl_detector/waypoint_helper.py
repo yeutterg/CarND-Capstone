@@ -17,10 +17,10 @@ def linear_arc_distance(waypoints, wp1, wp2):
         wp1 = i
     return dist
 
+
 ''' Computes the direct/aerial distance between two positions described by x,y,z '''
 def direct_position_distance(pos1, pos2):
     return math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2 + (pos1.z - pos2.z) ** 2)
-
 
 def get_yaw_angle(pose):
     quaternion = [pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]
