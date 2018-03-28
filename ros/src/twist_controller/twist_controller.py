@@ -22,6 +22,7 @@ class Controller(object):
         self.throttle_lpf = LowPassFilter(tau=3, ts=1)
         self.brake_deadband = brake_deadband
         self.min_speed = min_speed
+        self.steer_pid = PID(1., 0.1, 0.1, -max_steer_angle, max_steer_angle)
 
     #  Getting the velocity (current and required) and time elapsed from last call
 	#  Calculating the velocity correction (acceleration/deceleration) by PID
@@ -29,7 +30,10 @@ class Controller(object):
     def control(self, twist_cmd, current_velocity, time_elapsed):
         vel_error = twist_cmd.twist.linear.x - current_velocity.twist.linear.x
         throttle = self.velocity_controller.step(vel_error, time_elapsed)
-        steer = self.yaw_controller.get_steering(twist_cmd.twist.linear.x, twist_cmd.twist.angular.z, current_velocity.twist.linear.x)
+
+        # steer = self.yaw_controller.get_steering(twist_cmd.twist.linear.x, twist_cmd.twist.angular.z, current_velocity.twist.linear.x)
+        steer_err = twist_cmd.twist.angular.z - current_velocity.twist.angular.z
+        steer = self.steer_pid.step(steer_err, time_elapsed)
 
         if current_velocity.twist.linear.x < 0.1 and np.isclose(twist_cmd.twist.linear.x, 0.):
             torque = self.total_mass * self.wheel_radius * self.deceleration_limit
@@ -45,3 +49,4 @@ class Controller(object):
 
     def reset(self):
         self.velocity_controller.reset()
+        self.steer_pid.reset()
