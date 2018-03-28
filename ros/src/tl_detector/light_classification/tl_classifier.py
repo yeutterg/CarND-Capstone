@@ -50,11 +50,15 @@ class TLClassifier(object):
         tf_image_input = np.expand_dims(image, axis=0)
         class_id = TrafficLight.UNKNOWN
 
-        scores, classes = self.sess.run([self.detection_scores, self.detection_classes],
+        num_detections, scores, classes = self.sess.run([self.num_detections,\
+		self.detection_scores, self.detection_classes],
                 feed_dict={self.image_tensor: tf_image_input})
-        top_score = scores[0][0]
 
+	top_score = np.squeeze(scores)[0]
+	class_id = int(np.squeeze(classes)[0])
+
+	"""
         if top_score > self.prediction_threshold:
             class_id = int(classes[0][0])
-
+	"""
         return class_id
