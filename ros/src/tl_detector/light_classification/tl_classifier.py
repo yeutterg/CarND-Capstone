@@ -3,7 +3,16 @@ import tensorflow as tf
 import numpy as np
 import os
 import rospy
+import cv2
 
+def draw_rect(image, bbox, thickness = 4):
+    rows = image.shape[0]
+    cols = image.shape[1]
+    x = bbox[1] * cols
+    y = bbox[0] * rows
+    right = bbox[3] * cols
+    bottom = bbox[2] * rows
+    return cv2.rectangle(image, (int(x), int(y)), (int(right), int(bottom)), (255, 0, 0), thickness=thickness)
 
 def load_graph(frozen_graph_filename):
     with tf.gfile.GFile(frozen_graph_filename, "rb") as f:
@@ -28,6 +37,7 @@ class TLClassifier(object):
 
         self.prediction_threshold = 0.2
         self.frozen_graph_path = os.getcwd() + '/light_classification/models/output_inference/frozen_inference_graph.pb'
+	rospy.loginfo("Load graph from: " + str(self.frozen_graph_path))
         self.graph = load_graph(self.frozen_graph_path)
         self.sess = tf.Session(graph=self.graph)
 
@@ -50,15 +60,13 @@ class TLClassifier(object):
         tf_image_input = np.expand_dims(image, axis=0)
         class_id = TrafficLight.UNKNOWN
 
-        num_detections, scores, classes = self.sess.run([self.num_detections,\
-		self.detection_scores, self.detection_classes],
+        num, scores, boxes, classes = self.sess.run([self.num_detections,
+						self.detection_scores,
+						self.detection_boxes,
+						self.detection_classes],
                 feed_dict={self.image_tensor: tf_image_input})
 
-	top_score = np.squeeze(scores)[0]
-	class_id = int(np.squeeze(classes)[0])
+        if scores[0][0] > self.prediction_threshold:
+            class_id = self.label_dict[int(classes[0][0])]
 
-	"""
-        if top_score > self.prediction_threshold:
-            class_id = int(classes[0][0])
-	"""
         return class_id
