@@ -22,7 +22,8 @@ class Controller(object):
         self.throttle_lpf = LowPassFilter(tau=3, ts=1)
         self.brake_deadband = brake_deadband
         self.min_speed = min_speed
-        self.steer_pid = PID(1., 0.1, 0.1, -max_steer_angle, max_steer_angle)
+        # self.steer_pid = PID(1.5, 0., 0.21, -max_steer_angle, max_steer_angle)
+        self.steer_pid = PID(4., 0.05, 0.8, -max_steer_angle, max_steer_angle)
 
     #  Getting the velocity (current and required) and time elapsed from last call
 	#  Calculating the velocity correction (acceleration/deceleration) by PID
@@ -31,7 +32,6 @@ class Controller(object):
         vel_error = twist_cmd.twist.linear.x - current_velocity.twist.linear.x
         throttle = self.velocity_controller.step(vel_error, time_elapsed)
 
-        # steer = self.yaw_controller.get_steering(twist_cmd.twist.linear.x, twist_cmd.twist.angular.z, current_velocity.twist.linear.x)
         steer_err = twist_cmd.twist.angular.z - current_velocity.twist.angular.z
         steer = self.steer_pid.step(steer_err, time_elapsed)
 
