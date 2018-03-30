@@ -60,9 +60,8 @@ class TLClassifier(object):
         tf_image_input = np.expand_dims(image, axis=0)
         class_id = TrafficLight.UNKNOWN
 
-        num, scores, boxes, classes = self.sess.run([self.num_detections,
+        num, scores, classes = self.sess.run([self.num_detections,
 						self.detection_scores,
-						self.detection_boxes,
 						self.detection_classes],
                 feed_dict={self.image_tensor: tf_image_input})
 
