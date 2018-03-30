@@ -18,8 +18,8 @@ class Controller(object):
         self.total_mass = vehicle_mass + (fuel_capacity * GAS_DENSITY)
         self.wheel_radius = wheel_radius
         self.yaw_controller = YawController(wheel_base, steer_ratio, min_speed, max_lat_accel, max_steer_angle)
-        self.steer_lpf = LowPassFilter(tau=3, ts=1)
-        self.throttle_lpf = LowPassFilter(tau=3, ts=1)
+        self.steer_lpf = LowPassFilter(3, 1)
+        self.throttle_lpf = LowPassFilter(3, 1)
         self.brake_deadband = brake_deadband
         self.min_speed = min_speed
 
