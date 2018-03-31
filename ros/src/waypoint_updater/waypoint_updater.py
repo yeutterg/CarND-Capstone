@@ -27,7 +27,9 @@ def get_waypoint_velocity(waypoint):
     return waypoint.twist.twist.linear.x
 
 def decelerate_car(final_waypoints, current_waypoint_index, stop_waypoint_index):
-    
+
+    new_final_waypoints = []
+
     for i, wp in enumerate(final_waypoints):
         stop_idx = max(stop_waypoint_index - current_waypoint_index - 2, 0)
         dist = waypoint_helper.linear_arc_distance(final_waypoints, current_waypoint_index + i, stop_idx)
@@ -35,15 +37,21 @@ def decelerate_car(final_waypoints, current_waypoint_index, stop_waypoint_index)
         if vel < 1.:
             vel = 0.
         
-        vel = min(vel, wp.twist.twist.linear.x)
-        set_velocity(wp, vel)
+        p = Waypoint()
+        p.pose = wp.pose
+        p.twist.twist.linear.x = min(vel, wp.twist.twist.linear.x)
 
-def set_final_waypoints_velocity(final_waypoints, current_waypoint_index, stop_waypoint_index):
-    farthest_index = current_waypoint_index + LOOKAHEAD_WPS
-    if not stop_waypoint_index or stop_waypoint_index == -1 or stop_waypoint_index >= farthest_index:
-        return final_waypoints
+        new_final_waypoints.append(p)
+
+    return new_final_waypoints
+
+def set_final_waypoints_velocity(self):
+
+    farthest_index = self.current_waypoint_index + LOOKAHEAD_WPS
+    if not self.stop_waypoint_index or self.stop_waypoint_index == -1 or self.stop_waypoint_index >= farthest_index:
+        return self.get_final_waypoints()
     else:
-        decelerate_car(final_waypoints, current_waypoint_index, stop_waypoint_index)
+        return decelerate_car(self.get_final_waypoints(), self.current_waypoint_index, self.stop_waypoint_index)
 
 class WaypointUpdater(object):
     def __init__(self):
@@ -121,11 +129,8 @@ class WaypointUpdater(object):
         lane = Lane()
         lane.header.stamp = rospy.Time.now()
 
-        # get the next waypoints
-        final_waypoints = self.get_final_waypoints()
-
         # set the velocity based on traffic lights and obstacles
-        set_final_waypoints_velocity(final_waypoints, self.current_waypoint_index, self.stop_waypoint_index)
+        final_waypoints = set_final_waypoints_velocity(self)
 
         lane.waypoints = final_waypoints
 
