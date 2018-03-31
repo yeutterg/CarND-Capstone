@@ -31,11 +31,11 @@ class Controller(object):
     def control(self, twist_cmd, current_velocity, time_elapsed):
         
         # add lowpass filter to current velocity to remove signal noise
-        current_vel = self.vel_lpf.filt(current_velocity.twist_cmd.linear.x)
+        current_vel = self.vel_lpf.filt(current_velocity.twist.linear.x)
         vel_error = twist_cmd.twist.linear.x - current_vel
         throttle = self.velocity_controller.step(vel_error, time_elapsed)
         steer = self.yaw_controller.get_steering(twist_cmd.twist.linear.x, twist_cmd.twist.angular.z, current_vel)
-"""
+        """
         if current_velocity.twist.linear.x < 0.1 and np.isclose(twist_cmd.twist.linear.x, 0.):
             torque = self.total_mass * self.wheel_radius * self.deceleration_limit
             return 0., torque, steer
@@ -47,7 +47,7 @@ class Controller(object):
                 throttle = 0
             torque = self.total_mass * throttle
             return 0., torque, steer
-"""
+        """
         brake = 0
         if twist_cmd.twist.linear.x == 0 and current_vel < 0.:
             throttle = 0
@@ -55,7 +55,7 @@ class Controller(object):
         elif throttle < 0.1 and vel_error < 0:
             throttle = 0
             decel = max(vel_error, self.deceleration_limit)
-            brake = abs(decel)*self.vehicle_mass*self.wheel_radius
+            brake = abs(decel)*self.total_mass*self.wheel_radius
         
         return throttle, brake, steer
 
