@@ -15,7 +15,7 @@ Name 				| Udacity Account Email
 Shmulik Willinger | shmulik83(at)gmail.com
 Greg Yeutter | yeutterg(at)gmail.com
 Scott Clegg | scott.c(at)cox.net
-Apostolos Georgiadis | georgiadis.it(at)gmail.com
+Apostolos Georgiadis | apostolos.georgiadis(at)gmx.ch
 Or Khafi | okhafi(at)gmail.com
 
 ### Software Architecture
