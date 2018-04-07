@@ -32,7 +32,7 @@ def decelerate_car(final_waypoints, current_waypoint_index, stop_waypoint_index)
 
     for i, wp in enumerate(final_waypoints):
         stop_idx = max(stop_waypoint_index - current_waypoint_index - 2, 0)
-        dist = waypoint_helper.linear_arc_distance(final_waypoints, current_waypoint_index + i, stop_idx)
+        dist = waypoint_helper.linear_arc_distance(final_waypoints, i, stop_idx)
         vel = math.sqrt(2 * MAX_DECEL * dist)
         if vel < 1.:
             vel = 0.

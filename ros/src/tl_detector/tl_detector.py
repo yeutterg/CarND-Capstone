@@ -15,7 +15,7 @@ import math
 import waypoint_helper
 
 STATE_COUNT_THRESHOLD = 3
-MAX_TRAFFIC_LIGHT_DISTANCE_METERS = 150
+MAX_TRAFFIC_LIGHT_DISTANCE_METERS = 75
 
 
 class TLDetector(object):
@@ -186,8 +186,6 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        # For testing
-        # return light.state
 
         if not self.has_image:
             self.prev_light_loc = None
@@ -227,6 +225,7 @@ class TLDetector(object):
 
         if closest_light:
             state = self.get_light_state(closest_light)
+#            state = closest_light.state
             rospy.loginfo("Traffic light state is: " + str(state))
             
             if state == TrafficLight.RED:
