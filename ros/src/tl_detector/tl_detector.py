@@ -224,8 +224,8 @@ class TLDetector(object):
         closest_light_stop_waypoint, closest_light = self.get_nearby_traffic_light(self.current_waypoint_index)
 
         if closest_light:
-            state = self.get_light_state(closest_light)
-#            state = closest_light.state
+#            state = self.get_light_state(closest_light)
+            state = closest_light.state
             rospy.loginfo("Traffic light state is: " + str(state))
             
             if state == TrafficLight.RED:
