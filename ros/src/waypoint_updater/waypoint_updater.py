@@ -111,10 +111,7 @@ class WaypointUpdater(object):
 
         # deep copy waypoints since they should be immutable
         return copy.deepcopy(final_waypoints)
-
-    def get_stop_waypoint_index(self):
-        return self.get_stop_waypoint_index()
-
+            
     def update_waypoints(self):
         if not self.should_update_waypoints():
             return
